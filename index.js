@@ -28,7 +28,7 @@ async function run() {
   try {
     await client.connect();
     const db = client.db("FineEase-db");
-    const collection = db.collection("transactions");
+    const transactionCollection = db.collection("transactions");
 
     app.post('/transactions', async (req,res) => {
         try{
@@ -44,11 +44,11 @@ async function run() {
         } 
         catch(err) {
             console.error(err)
-            res.status(500).send({message: "Server error"})
+            res.status(500).send({message: "Error fetching transections"})
         }
     })
 
-    app.get('/transactions', async (req,res) => {
+    app.get('/transactions', async (req, res) => {
         try {
             const cursor = transactionCollection.find();
             const result = await cursor.toArray()
@@ -59,8 +59,48 @@ async function run() {
         }
     })
 
-    
-     
+    app.get('/transactions/:email', async (req, res) => {
+        try {
+            const email = req.params.email;
+            const result = await transactionCollection.find({ userEmail: email }).toArray();
+            res.status(200).send(result);
+        } catch(err) {
+            console.error(err)
+            res.status(500).send({message: "Error fetching user transections"})
+        }
+    })
+
+    app.put('/transactions/:id', async (req, res) => {
+        try{
+            const id = req.params.id;
+            const updatedData = req.body;
+            const filter = { _id: new ObjectId(id)};
+            const updateDoc = {
+                $set: {
+                    ...updatedData,
+                    updatedAt: new Date(),
+                },
+            }
+            const result = await transactionCollection.updateOne(filter, updateDoc) 
+            res.status(200).send(result)      
+        } catch(err) {
+            console.error(err)
+            res.status(500).send({message: "Server error while updating transactions"})
+        }
+    })
+
+
+   app.delete('/transactions/:id', async (req, res) => {
+     try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) }
+        const result = await transactionCollection.deleteOne(query)
+        res.status(200).send(result)
+     } catch(err) {
+        console.error(err)
+            res.status(500).send({message: "Server error while deleting transactions"})
+     }
+   })  
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
