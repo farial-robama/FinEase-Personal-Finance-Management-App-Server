@@ -26,12 +26,27 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    
-    await client.connect();
-    
+    // await client.connect();
+    app.post('/transactions', async (req,res) => {
+        try{
+            const transaction = req.body;
 
+    if (!transaction.userEmail || !transaction.userName || !transaction.type || !transaction.category || !transaction.amount) {
+        return res.status(400).json({message: "Missing required fields"})
+    }
 
+    const db = client.db("FineEase-db");
+    const collection = db.collection("transactions");
 
+    const result = await collection.insertOne({...transaction, cratedAt: new Date()});
+    res.status(201).json({message: "Transaction added successfully!", id: result.insertedId})
+        } 
+        catch(err) {
+            console.error(err)
+            res.status(500).json({message: "Server error"})
+        }
+    })
+     
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
