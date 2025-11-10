@@ -12,7 +12,7 @@ app.get('/', (req, res) => {
 })
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.zeqi5bj.mongodb.net/?appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -29,7 +29,29 @@ async function run() {
     await client.connect();
     const db = client.db("FineEase-db");
     const transactionCollection = db.collection("transactions");
+    const userCollection = db.collection("users");
 
+    // Add User
+    app.post('/users', async (req,res) => {
+        try{
+            const user = req.body;
+            const existingUser = await userCollection.findOne({ email: user.email})
+
+    if (existingUser) {
+        return res.status(200).send({message: "User already exists!"})
+    }
+
+    user.createdAt = new Date()
+    const result = await userCollection.insertOne(user);
+    res.status(201).send({message: "User added successfully!", id: result.insertedId})
+        } 
+        catch(err) {
+            console.error(err)
+            res.status(500).send({message: "Error adding user"})
+        }
+    })
+
+    // Add Transaction
     app.post('/transactions', async (req,res) => {
         try{
             const transaction = req.body;
@@ -38,16 +60,17 @@ async function run() {
         return res.status(400).json({message: "Missing required fields"})
     }
 
-    transaction.cratedAt = new Date()
+    transaction.createdAt = new Date()
     const result = await transactionCollection.insertOne(transaction);
     res.status(201).send({message: "Transaction added successfully!", id: result.insertedId})
         } 
         catch(err) {
             console.error(err)
-            res.status(500).send({message: "Error fetching transections"})
+            res.status(500).send({message: "Error adding transections"})
         }
     })
-
+    
+    // Get All Transactions
     app.get('/transactions', async (req, res) => {
         try {
             const cursor = transactionCollection.find();
@@ -59,6 +82,7 @@ async function run() {
         }
     })
 
+    // Get User Specific Transactions
     app.get('/transactions/:email', async (req, res) => {
         try {
             const email = req.params.email;
@@ -70,6 +94,7 @@ async function run() {
         }
     })
 
+    // Update Transactions
     app.put('/transactions/:id', async (req, res) => {
         try{
             const id = req.params.id;
@@ -89,7 +114,7 @@ async function run() {
         }
     })
 
-
+   // Delete Transactions
    app.delete('/transactions/:id', async (req, res) => {
      try {
         const id = req.params.id;
