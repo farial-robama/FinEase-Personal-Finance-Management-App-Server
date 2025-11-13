@@ -1,15 +1,40 @@
 const express = require('express')
 const cors = require ('cors')
 const app = express()
+const admin = require("firebase-admin")
+const serviceAccount = require("./serviceKey.json");
 require("dotenv").config()
-const port = process.env.PORT||3000
+const port = process.env.PORT||5000
+
+// const corsOptions = {
+//   origin: "*", // or ["http://localhost:5174", "https://your-vercel-domain.com"]
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+// };
+
+// // Use CORS middleware
+// app.use(cors(corsOptions));
+
+// // Handle preflight requests
+// app.options("*", cors(corsOptions));
+
+
+
+// app.use(cors({ origin: "*" }));
 
 app.use(cors())
 app.use(express.json())
 
+
+
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -23,6 +48,23 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+// const verifyFirebaseToken = async (req, res, next) => {
+//     const authorization = req.headers.authorization;
+
+//     if (!authorization) {
+//         return res.status(401).send({message: "Unauthorized access. Token not found!"})
+//     }
+//     const token = authorization.split(" ")[1];
+//     try {
+//         const decodedToken = await admin.auth().verifyIdToken(token);
+//         req.user = decodedToken
+//         next()
+//     }catch (err) {
+//         res.status(401).send({message: "Unauthorized access."})
+//     }
+// }
+
 
 async function run() {
   try {
@@ -56,7 +98,7 @@ async function run() {
         try{
             const transaction = req.body;
 
-    if (!transaction.userEmail || !transaction.userName || !transaction.type || !transaction.category || !transaction.amount) {
+    if (!transaction.type || !transaction.category || transaction.amount == null) {
         return res.status(400).json({message: "Missing required fields"})
     }
 
@@ -101,9 +143,16 @@ async function run() {
     })
 
     // Get User Specific Transactions
-    app.get('/transactions/:email', async (req, res) => {
+    app.get('/transactions/:email',  async (req, res) => {
         try {
             const email = req.params.email;
+            // const authenticatedEmail = req.user?.email
+            // if (requestedEmail !== authenticatedEmail) {
+            //     return res.status(403).send({message: "Forbidden: You can view only view your own transactions."})
+            // }
+
+            // const sortField = req.query.sortField || "createdAt";
+            // const setOrder = req.query.sortOrder === "asc" ? 1 : -1;
             const result = await transactionCollection.find({ userEmail: email }).toArray();
             res.status(200).send(result);
         } catch(err) {
@@ -113,7 +162,7 @@ async function run() {
     })
 
     // Update Transactions
-    app.put('/transactions/:id', async (req, res) => {
+    app.put('/transactions/:id',  async (req, res) => {
         try{
             const id = req.params.id;
             const updatedData = req.body;
@@ -133,7 +182,7 @@ async function run() {
     })
 
    // Delete Transactions
-   app.delete('/transactions/:id', async (req, res) => {
+   app.delete('/transactions/:id',  async (req, res) => {
      try {
         const id = req.params.id;
         const query = { _id: new ObjectId(id) }
@@ -145,7 +194,7 @@ async function run() {
      }
    })  
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
