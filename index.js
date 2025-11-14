@@ -136,9 +136,6 @@ async function run() {
             //     return res.status(403).send({message: "Forbidden: You can view only view your own transactions."})
             // }
 
-            // const sortField = req.query.sortField || "createdAt";
-            // const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
-            // const result = (await transactionCollection.find({ userEmail: email }).sort({[ sortField ]: sortOrder}).toArray());
             const result = await transactionCollection.find({ userEmail: email }).sort({createdAt: -1}).toArray();
             res.status(200).send(result);
         } catch(err) {
