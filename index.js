@@ -6,22 +6,6 @@ const serviceAccount = require("./serviceKey.json");
 require("dotenv").config()
 const port = process.env.PORT||5000
 
-// const corsOptions = {
-//   origin: "*", // or ["http://localhost:5174", "https://your-vercel-domain.com"]
-//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-//   allowedHeaders: ["Content-Type", "Authorization"],
-// };
-
-// // Use CORS middleware
-// app.use(cors(corsOptions));
-
-// // Handle preflight requests
-// app.options("*", cors(corsOptions));
-
-
-
-// app.use(cors({ origin: "*" }));
-
 app.use(cors())
 app.use(express.json())
 
@@ -68,7 +52,8 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect()
+    
     const db = client.db("FineEase-db");
     const transactionCollection = db.collection("transactions");
     const userCollection = db.collection("users");
@@ -152,8 +137,9 @@ async function run() {
             // }
 
             // const sortField = req.query.sortField || "createdAt";
-            // const setOrder = req.query.sortOrder === "asc" ? 1 : -1;
-            const result = await transactionCollection.find({ userEmail: email }).toArray();
+            // const sortOrder = req.query.sortOrder === "asc" ? 1 : -1;
+            // const result = (await transactionCollection.find({ userEmail: email }).sort({[ sortField ]: sortOrder}).toArray());
+            const result = await transactionCollection.find({ userEmail: email }).sort({createdAt: -1}).toArray();
             res.status(200).send(result);
         } catch(err) {
             console.error(err)
